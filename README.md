@@ -10,53 +10,25 @@ PNG, JPEG, GIF, or other image formats. It does not replace an image editor and
 it does not convert files by itself; it adds Windows-level read support for the
 PEP image format.
 
+## Install
+
+Download `PepWicCodecSetup-win-x64.exe` from the
+[latest GitHub release](https://github.com/elebree/pep-wic-codec/releases/latest)
+and run it.
+
+The installer requires administrator approval because WIC codecs are registered
+machine-wide. On the final installer page, you can optionally restart File
+Explorer so thumbnails and the preview pane can pick up the codec immediately.
+Otherwise, restart Explorer later or sign out and back in.
+
+To remove the codec, uninstall **PEP WIC Codec** from Windows Settings or
+Control Panel.
+
+Build, packaging, and manual registration instructions are in
+[BUILD.md](BUILD.md).
+
 ## Attribution
 
 The PEP format and original encoder/decoder implementation come from
 [ENDESGA/PEP](https://github.com/ENDESGA/PEP). Credit for that work belongs to
 ENDESGA and the upstream repository's respective authors and contributors.
-
-## Build
-
-Run from a Visual Studio Developer PowerShell:
-
-```powershell
-cmake -S .\wic -B .\wic\build -G "Visual Studio 17 2022" -A x64
-cmake --build .\wic\build --config Release
-```
-
-The DLL is written to `wic\build\Release\PepWicCodec.dll`.
-
-## Register
-
-WIC codec discovery uses machine-wide codec registration on this system. The
-script will request elevation through UAC if it is not already running as
-Administrator:
-
-```powershell
-.\wic\tools\register.ps1 .\wic\build\Release\PepWicCodec.dll
-```
-
-When no DLL path is passed, the script first looks for `PepWicCodec.dll` in the
-same folder as the script. This is the default layout in the release archive, so
-installing from an extracted release can use:
-
-```powershell
-.\register.ps1
-```
-
-The registration also marks `.pep` as an image file type and attaches Windows'
-built-in photo thumbnail provider. If File Explorer was already open, restart
-Explorer or sign out/in before checking thumbnails or the preview pane.
-
-To remove it:
-
-```powershell
-.\wic\tools\unregister.ps1 .\wic\build\Release\PepWicCodec.dll
-```
-
-From an extracted release archive, run:
-
-```powershell
-.\unregister.ps1
-```

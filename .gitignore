@@ -1,2 +1,4 @@
 /.vs
 /wic/out
+/wic/build
+/artifacts

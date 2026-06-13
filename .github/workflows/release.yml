@@ -38,6 +38,27 @@ jobs:
         shell: pwsh
         run: cmake --build "$env:BUILD_DIR" --config Release --parallel
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $version = "1.0.0"
+          if ($env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME -match '^v(.+)$') {
+            $version = $Matches[1]
+          }
+
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc `
+            "$env:GITHUB_WORKSPACE\wic\installer\PepWicCodec.iss" `
+            "/DAppVersion=$version" `
+            "/DSourceDir=$env:BUILD_DIR\Release" `
+            "/DOutputDir=$env:GITHUB_WORKSPACE\artifacts"
+
       - name: Package
         shell: pwsh
         run: |
@@ -56,7 +77,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: PepWicCodec-win-x64
-          path: ${{ github.workspace }}\artifacts\PepWicCodec-win-x64.zip
+          path: |
+            ${{ github.workspace }}\artifacts\PepWicCodec-win-x64.zip
+            ${{ github.workspace }}\artifacts\PepWicCodecSetup-win-x64.exe
           if-no-files-found: error
 
       - name: Upload release asset
@@ -64,4 +87,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.release.tag_name || github.ref_name }}
-          files: ${{ github.workspace }}\artifacts\PepWicCodec-win-x64.zip
+          files: |
+            ${{ github.workspace }}\artifacts\PepWicCodec-win-x64.zip
+            ${{ github.workspace }}\artifacts\PepWicCodecSetup-win-x64.exe
