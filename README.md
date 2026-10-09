@@ -1,9 +1,15 @@
 # PEP WIC Codec
 
+[![Build](https://github.com/elebree/pep-wic-codec/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/elebree/pep-wic-codec/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/elebree/pep-wic-codec)](https://github.com/elebree/pep-wic-codec/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/elebree/pep-wic-codec/total)](https://github.com/elebree/pep-wic-codec/releases)
+![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
+[![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-lightgrey)](LICENSE)
+
 PEP WIC Codec lets Windows understand `.pep` image files. After installation,
 Windows Explorer and other programs that use Windows Imaging Component can
 recognize PEP images, show them as image files, and use the built-in Windows
-thumbnail and preview system for them.
+thumbnail, preview, details pane, and image property system for them.
 
 Use this if you have `.pep` files and want Windows to handle them more like
 PNG, JPEG, GIF, or other image formats. It does not replace an image editor and
