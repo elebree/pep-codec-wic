@@ -44,6 +44,9 @@ $decoderKey = "Registry::HKEY_LOCAL_MACHINE\Software\Classes\CLSID\{f5c347b6-850
 $mergedDecoderKey = "Registry::HKEY_CLASSES_ROOT\CLSID\{f5c347b6-8502-4fa5-8b35-875bbd966c63}"
 $decoderCategoryInstanceKey = "Registry::HKEY_LOCAL_MACHINE\Software\Classes\CLSID\{7ed96837-96f0-4812-b211-f13c24117ed3}\Instance\{f5c347b6-8502-4fa5-8b35-875bbd966c63}"
 $extensionKey = "Registry::HKEY_LOCAL_MACHINE\Software\Classes\.pep"
+$propertyHandlerKey = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\PropertySystem\PropertyHandlers\.pep"
+$detailsKey = "Registry::HKEY_LOCAL_MACHINE\Software\Classes\SystemFileAssociations\.pep"
+$kindMapKey = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\KindMap"
 $inprocKey = Join-Path $decoderKey "InprocServer32"
 
 if (-not (Test-Path -LiteralPath $decoderKey)) {
@@ -63,7 +66,30 @@ if (-not (Test-Path -LiteralPath $extensionKey)) {
     throw ".pep image file association was not written to HKLM."
 }
 
+if (-not (Test-Path -LiteralPath $propertyHandlerKey)) {
+    throw ".pep image property handler was not written to HKLM."
+}
+
+$propertyHandler = Get-ItemProperty -LiteralPath $propertyHandlerKey
+if ($propertyHandler.'(default)' -ne "{a38b883c-1682-497e-97b0-0a3a9e801682}") {
+    throw ".pep image property handler has an unexpected CLSID: $($propertyHandler.'(default)')"
+}
+
+if (-not (Test-Path -LiteralPath $detailsKey)) {
+    throw ".pep image details-pane property list was not written to HKLM."
+}
+
+$details = Get-ItemProperty -LiteralPath $detailsKey
+if ($details.PreviewDetails -notlike "*System.Image.Dimensions*" -or $details.FullDetails -notlike "*System.Image.Dimensions*") {
+    throw ".pep image details-pane property list does not include System.Image.Dimensions."
+}
+
+$kindMap = Get-ItemProperty -LiteralPath $kindMapKey
+if ($kindMap.'.pep' -ne "picture") {
+    throw ".pep Explorer kind mapping has an unexpected value: $($kindMap.'.pep')"
+}
+
 $inproc = Get-ItemProperty -LiteralPath $inprocKey
 Write-Host "Registered PEP WIC codec machine-wide: $($resolved.Path)"
 Write-Host "COM server path: $($inproc.'(default)')"
-Write-Host "If Explorer was already open, restart Explorer or sign out/in before checking thumbnails."
+Write-Host "If Explorer was already open, restart Explorer or sign out/in before checking thumbnails, image properties, and details pane values."

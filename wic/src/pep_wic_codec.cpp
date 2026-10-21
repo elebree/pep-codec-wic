@@ -48,11 +48,22 @@ namespace
 	constexpr wchar_t kPepProgId[] = L"pepfile";
 	constexpr wchar_t kPepMimeType[] = L"image/x-pep";
 	constexpr wchar_t kPepFileExtensions[] = L".pep";
+	constexpr wchar_t kPepKind[] = L"picture";
 	constexpr wchar_t kImagePersistentHandler[] = L"{1295340B-BF50-4A88-BB2F-287E0B9B0016}";
+	// Windows' built-in IPropertyStore handler for image dimensions and metadata.
+	constexpr wchar_t kImagePropertyHandler[] = L"{a38b883c-1682-497e-97b0-0a3a9e801682}";
 	constexpr wchar_t kExtractImageShellExtension[] = L"{BB2E617C-0920-11d1-9A0B-00C04FC2D6C1}";
 	constexpr wchar_t kThumbnailProviderShellExtension[] = L"{e357fccd-a995-4576-b01f-234630154e96}";
 	constexpr wchar_t kPhotoExtractImage[] = L"{3F30C968-480A-4C6C-862D-EFC0897BB84B}";
 	constexpr wchar_t kPhotoThumbnailProvider[] = L"{C7657C4A-9F68-40fa-A4DF-96BC08EB3551}";
+	constexpr wchar_t kPepExtendedTileInfo[] = L"prop:System.ItemType;*System.DateModified;*System.Image.Dimensions";
+	constexpr wchar_t kPepInfoTip[] = L"prop:System.ItemType;*System.DateModified;*System.Image.Dimensions;*System.Size";
+	constexpr wchar_t kPepPreviewDetails[] =
+		L"prop:*System.DateModified;*System.Image.Dimensions;*System.Size;*System.OfflineAvailability;*System.OfflineStatus;*System.DateCreated;*System.SharedWith";
+	constexpr wchar_t kPepFullDetails[] =
+		L"prop:System.PropGroup.Image;System.Image.Dimensions;System.Image.HorizontalSize;System.Image.VerticalSize;System.Image.BitDepth;"
+		L"System.PropGroup.FileSystem;System.ItemNameDisplay;System.ItemType;System.ItemFolderPathDisplay;System.DateCreated;System.DateModified;"
+		L"System.Size;System.FileAttributes;System.OfflineAvailability;System.OfflineStatus;System.SharedWith;System.FileOwner;System.ComputerName";
 
 	HMODULE g_module = nullptr;
 	std::atomic<ULONG> g_objectCount{0};
@@ -245,6 +256,22 @@ namespace
 		if (result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND)
 			return S_OK;
 		return HRESULT_FROM_WIN32(result);
+	}
+
+	HRESULT DeleteRegistryValue(HKEY root, const std::wstring &subKey, const wchar_t *valueName)
+	{
+		HKEY key = nullptr;
+		const LONG openResult = RegOpenKeyExW(root, subKey.c_str(), 0, KEY_SET_VALUE, &key);
+		if (openResult == ERROR_FILE_NOT_FOUND)
+			return S_OK;
+		if (openResult != ERROR_SUCCESS)
+			return HRESULT_FROM_WIN32(openResult);
+
+		const LONG deleteResult = RegDeleteValueW(key, valueName);
+		RegCloseKey(key);
+		if (deleteResult == ERROR_SUCCESS || deleteResult == ERROR_FILE_NOT_FOUND)
+			return S_OK;
+		return HRESULT_FROM_WIN32(deleteResult);
 	}
 
 #define RETURN_IF_FAILED(expr)      \
@@ -980,6 +1007,10 @@ namespace
 		const std::wstring extensionPersistentHandlerKey = extensionKey + L"\\PersistentHandler";
 		const std::wstring extensionExtractImageKey = extensionKey + L"\\ShellEx\\" + kExtractImageShellExtension;
 		const std::wstring extensionThumbnailProviderKey = extensionKey + L"\\ShellEx\\" + kThumbnailProviderShellExtension;
+		const std::wstring extensionPropertyHandlerKey =
+			L"Software\\Microsoft\\Windows\\CurrentVersion\\PropertySystem\\PropertyHandlers\\.pep";
+		const std::wstring extensionSystemFileAssociationKey = L"Software\\Classes\\SystemFileAssociations\\.pep";
+		const std::wstring kindMapKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\KindMap";
 		const std::wstring progIdKey = L"Software\\Classes\\" + std::wstring(kPepProgId);
 		const std::wstring progIdExtractImageKey = progIdKey + L"\\ShellEx\\" + kExtractImageShellExtension;
 		const std::wstring progIdThumbnailProviderKey = progIdKey + L"\\ShellEx\\" + kThumbnailProviderShellExtension;
@@ -1031,6 +1062,12 @@ namespace
 		RETURN_IF_FAILED(SetRegistryString(root, extensionPersistentHandlerKey, nullptr, kImagePersistentHandler));
 		RETURN_IF_FAILED(SetRegistryString(root, extensionExtractImageKey, nullptr, kPhotoExtractImage));
 		RETURN_IF_FAILED(SetRegistryString(root, extensionThumbnailProviderKey, nullptr, kPhotoThumbnailProvider));
+		RETURN_IF_FAILED(SetRegistryString(root, extensionPropertyHandlerKey, nullptr, kImagePropertyHandler));
+		RETURN_IF_FAILED(SetRegistryString(root, extensionSystemFileAssociationKey, L"ExtendedTileInfo", kPepExtendedTileInfo));
+		RETURN_IF_FAILED(SetRegistryString(root, extensionSystemFileAssociationKey, L"InfoTip", kPepInfoTip));
+		RETURN_IF_FAILED(SetRegistryString(root, extensionSystemFileAssociationKey, L"PreviewDetails", kPepPreviewDetails));
+		RETURN_IF_FAILED(SetRegistryString(root, extensionSystemFileAssociationKey, L"FullDetails", kPepFullDetails));
+		RETURN_IF_FAILED(SetRegistryString(root, kindMapKey, L".pep", kPepKind));
 
 		RETURN_IF_FAILED(SetRegistryString(root, progIdKey, nullptr, L"PEP Image"));
 		RETURN_IF_FAILED(SetRegistryString(root, progIdKey, L"FriendlyTypeName", L"PEP Image"));
@@ -1050,8 +1087,15 @@ namespace
 		const std::wstring clsidKey = L"Software\\Classes\\CLSID\\" + clsid;
 		const std::wstring decoderCategoryInstanceKey =
 			L"Software\\Classes\\CLSID\\" + decoderCategory + L"\\Instance\\" + clsid;
+		const std::wstring extensionPropertyHandlerKey =
+			L"Software\\Microsoft\\Windows\\CurrentVersion\\PropertySystem\\PropertyHandlers\\.pep";
+		const std::wstring extensionSystemFileAssociationKey = L"Software\\Classes\\SystemFileAssociations\\.pep";
+		const std::wstring kindMapKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\KindMap";
 		RETURN_IF_FAILED(DeleteRegistryTree(root, decoderCategoryInstanceKey));
 		RETURN_IF_FAILED(DeleteRegistryTree(root, clsidKey));
+		RETURN_IF_FAILED(DeleteRegistryTree(root, extensionPropertyHandlerKey));
+		RETURN_IF_FAILED(DeleteRegistryTree(root, extensionSystemFileAssociationKey));
+		RETURN_IF_FAILED(DeleteRegistryValue(root, kindMapKey, L".pep"));
 		RETURN_IF_FAILED(DeleteRegistryTree(root, L"Software\\Classes\\pepfile"));
 		RETURN_IF_FAILED(DeleteRegistryTree(root, L"Software\\Classes\\.pep"));
 		return S_OK;

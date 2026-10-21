@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
+if(POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW)
+endif()
+
 project(pep_wic_codec LANGUAGES CXX)
 
 set(PEP_HEADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -30,6 +34,8 @@ target_compile_definitions(pep_wic_codec PRIVATE
 
 if(MSVC)
     target_compile_options(pep_wic_codec PRIVATE /W4 /permissive- /EHsc)
+    set_property(TARGET pep_wic_codec PROPERTY
+        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 target_link_libraries(pep_wic_codec PRIVATE

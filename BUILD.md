@@ -23,7 +23,7 @@ The installer is written to `artifacts\PepWicCodecSetup-win-x64.exe`. It
 requires administrator approval, installs the codec under Program Files, and
 registers/unregisters the WIC COM server during install and uninstall. At the
 end of installation, it offers an optional File Explorer restart so thumbnails
-and preview handlers can pick up the new codec immediately.
+preview handlers, and image properties can pick up the new codec immediately.
 
 ## Register
 
@@ -43,9 +43,11 @@ installing from an extracted release can use:
 .\register.ps1
 ```
 
-The registration also marks `.pep` as an image file type and attaches Windows'
-built-in photo thumbnail provider. If File Explorer was already open, restart
-Explorer or sign out/in before checking thumbnails or the preview pane.
+The registration also marks `.pep` as an image/picture file type, attaches
+Windows' built-in photo thumbnail provider and image property handler, and
+registers the image property lists used by Explorer's details pane. If File
+Explorer was already open, restart Explorer or sign out/in before checking
+thumbnails, image dimensions, details pane values, or the preview pane.
 
 To remove it:
 

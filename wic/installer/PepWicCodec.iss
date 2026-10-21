@@ -45,8 +45,8 @@ Name: "{group}\PEP WIC Codec README"; Filename: "{app}\README.md"
 Name: "{group}\Uninstall PEP WIC Codec"; Filename: "{uninstallexe}"
 
 [Messages]
-FinishedLabel=Setup has finished installing [name] on your computer.%n%nIf File Explorer was already open, restart Explorer or sign out/in before checking thumbnails and the preview pane.
-FinishedLabelNoIcons=Setup has finished installing [name] on your computer.%n%nIf File Explorer was already open, restart Explorer or sign out/in before checking thumbnails and the preview pane.
+FinishedLabel=Setup has finished installing [name] on your computer.%n%nIf File Explorer was already open, restart Explorer or sign out/in before checking thumbnails, image properties, and the preview pane.
+FinishedLabelNoIcons=Setup has finished installing [name] on your computer.%n%nIf File Explorer was already open, restart Explorer or sign out/in before checking thumbnails, image properties, and the preview pane.
 
 [Run]
 Filename: "{cmd}"; Parameters: "/C ""taskkill /F /IM explorer.exe >NUL 2>&1 & start explorer.exe"""; Description: "Restart File Explorer now"; Flags: runhidden postinstall unchecked skipifsilent
