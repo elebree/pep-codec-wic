@@ -1,0 +1,99 @@
+# Dev tooling and task runner for the PEP WIC codec: https://mise.jdx.dev
+#
+# `mise install` sets up the whole toolchain, with no Visual Studio needed:
+# CMake, Ninja, llvm-mingw (clang, lld, libc++ and the mingw-w64 Windows
+# headers) and Inno Setup. The CMake projects still build with MSVC too.
+
+[tools]
+cmake = "4.4"
+ninja = "1.13"
+"github:mstorsjo/llvm-mingw" = { version = "20261020", asset_pattern = "llvm-mingw-*-ucrt-x86_64.zip", strip_components = 1, bin_path = "bin" }
+
+# Inno Setup has no portable download. mise saves its installer in app\, and
+# postinstall runs it there in portable mode, which writes no uninstall entry,
+# file association or shortcuts, then deletes it.
+[tools."http:innosetup"]
+version = "6.7.3"
+url = "https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe"
+bin_path = "app"
+postinstall = 'cd /d "%MISE_TOOL_INSTALL_PATH%\app" && innosetup.exe /PORTABLE=1 /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER /DIR="%MISE_TOOL_INSTALL_PATH%\app" && del innosetup.exe'
+
+[tasks.configure]
+description = "Generate the Ninja Release build tree for the codec in wic/build"
+run = "cmake -S wic -B wic/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++"
+
+[tasks.build]
+description = "Build wic/build/Release/PepWicCodec.dll"
+depends = ["configure"]
+run = "cmake --build wic/build"
+
+[tasks.configure-cli]
+description = "Generate the Ninja Release build tree for the pep command-line tool in cli/build"
+run = "cmake -S cli -B cli/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++"
+
+[tasks.build-cli]
+description = "Build cli/build/Release/pep.exe"
+depends = ["configure-cli"]
+run = "cmake --build cli/build"
+
+[tasks.installer]
+description = "Build artifacts/PepWicCodecSetup-win-x64.exe (codec and optional command-line tool) with Inno Setup"
+depends = ["build", "build-cli"]
+usage = 'arg "[version]" help="AppVersion for the installer; defaults to the one in PepWicCodec.iss"'
+shell = "pwsh -NoProfile -Command"
+run = '''
+$defines = @()
+if ($env:usage_version) { $defines += "/DAppVersion=$env:usage_version" }
+ISCC.exe @defines installer/PepWicCodec.iss
+'''
+
+[tasks.package]
+description = "Zip the DLL, register scripts and README into artifacts/PepWicCodec-win-x64.zip"
+depends = ["build"]
+shell = "pwsh -NoProfile -Command"
+run = '''
+$ErrorActionPreference = "Stop"
+$staging = "artifacts/PepWicCodec"
+New-Item -ItemType Directory -Path $staging -Force | Out-Null
+Copy-Item -Destination $staging -LiteralPath @(
+    "wic/build/Release/PepWicCodec.dll"
+    "installer/register.ps1"
+    "installer/unregister.ps1"
+    "README.md"
+)
+Compress-Archive -Path "$staging/*" -DestinationPath "artifacts/PepWicCodec-win-x64.zip" -Force
+'''
+
+[tasks.dist]
+description = "Build the installer and the zip, as CI does"
+depends = ["installer", "package"]
+
+[tasks.register]
+description = "Register the codec machine-wide (prompts for UAC)"
+usage = 'arg "[dll]" default="wic/build/Release/PepWicCodec.dll"'
+shell = "pwsh -NoProfile -Command"
+run = 'pwsh -NoProfile -ExecutionPolicy Bypass -File installer/register.ps1 $env:usage_dll'
+
+[tasks.unregister]
+description = "Unregister the codec (prompts for UAC)"
+usage = 'arg "[dll]" default="wic/build/Release/PepWicCodec.dll"'
+shell = "pwsh -NoProfile -Command"
+run = 'pwsh -NoProfile -ExecutionPolicy Bypass -File installer/unregister.ps1 $env:usage_dll'
+
+[tasks.restart-explorer]
+description = "Restart File Explorer so it reloads codecs and shell handlers"
+shell = "pwsh -NoProfile -Command"
+run = '''
+Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 2
+# Windows usually restarts the shell by itself; only start it if it did not.
+if (-not (Get-Process explorer -ErrorAction SilentlyContinue)) { Start-Process explorer.exe }
+'''
+
+[tasks.clean]
+description = "Delete wic/build, cli/build and artifacts"
+shell = "pwsh -NoProfile -Command"
+run = '''
+$ErrorActionPreference = "Stop"
+"wic/build", "cli/build", "artifacts" | Where-Object { Test-Path -LiteralPath $_ } | Remove-Item -Recurse -Force
+'''

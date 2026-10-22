@@ -813,7 +813,13 @@ namespace
 			return S_OK;
 		}
 
+		// mingw-w64's wincodec.h spells the Windows SDK's DoesSupportChromakey with a capital K;
+		// only the vtable slot matters.
+#ifdef __MINGW32__
+		HRESULT STDMETHODCALLTYPE DoesSupportChromaKey(BOOL *supportChromakey) override
+#else
 		HRESULT STDMETHODCALLTYPE DoesSupportChromakey(BOOL *supportChromakey) override
+#endif
 		{
 			if (supportChromakey == nullptr)
 				return E_INVALIDARG;

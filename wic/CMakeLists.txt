@@ -25,7 +25,9 @@ add_library(pep_wic_codec SHARED
 )
 
 target_compile_features(pep_wic_codec PRIVATE cxx_std_17)
-target_include_directories(pep_wic_codec PRIVATE "${PEP_HEADER_DIR}" "${PEP_COMMON_DIR}")
+# SYSTEM: no warnings from the vendored upstream pep.h.
+target_include_directories(pep_wic_codec SYSTEM PRIVATE "${PEP_HEADER_DIR}")
+target_include_directories(pep_wic_codec PRIVATE "${PEP_COMMON_DIR}")
 target_compile_definitions(pep_wic_codec PRIVATE
     UNICODE
     _UNICODE
@@ -37,6 +39,11 @@ if(MSVC)
     target_compile_options(pep_wic_codec PRIVATE /W4 /permissive- /EHsc)
     set_property(TARGET pep_wic_codec PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+elseif(MINGW)
+    target_compile_options(pep_wic_codec PRIVATE -Wall -Wextra)
+    # Links libc++ and libunwind statically: Explorer can't load the codec if it
+    # depends on the toolchain's DLLs. -s strips symbols, half the DLL's size.
+    target_link_options(pep_wic_codec PRIVATE -static $<$<CONFIG:Release>:-s>)
 endif()
 
 target_link_libraries(pep_wic_codec PRIVATE
@@ -47,5 +54,6 @@ target_link_libraries(pep_wic_codec PRIVATE
 )
 
 set_target_properties(pep_wic_codec PROPERTIES
+    PREFIX ""
     OUTPUT_NAME "PepWicCodec"
 )

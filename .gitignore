@@ -5,4 +5,5 @@
 /cli/build
 /cli/build-*
 /artifacts
+/mise.local.toml
 /samples

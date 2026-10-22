@@ -150,12 +150,14 @@ namespace
 		{
 		}
 
-		// The lower part takes the values up to the median, but never all of the box.
+		// The lower part takes the values up to the median, but never all of the box. Stable
+		// partitions keep the order, and so the split by position below, the same with every
+		// standard library.
 		const auto first = colors.begin() + static_cast<ptrdiff_t>(box.begin);
 		const auto last = colors.begin() + static_cast<ptrdiff_t>(box.end);
-		auto middle = std::partition(first, last, [&](const Color &color) { return color.p[channel] <= median; });
+		auto middle = std::stable_partition(first, last, [&](const Color &color) { return color.p[channel] <= median; });
 		if (middle == last)
-			middle = std::partition(first, last, [&](const Color &color) { return color.p[channel] < median; });
+			middle = std::stable_partition(first, last, [&](const Color &color) { return color.p[channel] < median; });
 		if (middle == first) // every color has the same value there
 			middle = first + (last - first) / 2;
 
@@ -190,7 +192,8 @@ namespace
 	}
 
 	// Palette entries sorted by premultiplied green, so that a nearest-color search can stop
-	// once the green difference alone is farther than the best match so far.
+	// once the green difference alone is farther than the best match so far. Ties go by index,
+	// so that equally near entries are found in the same order with every standard library.
 	class SearchPalette
 	{
 	public:
@@ -198,7 +201,7 @@ namespace
 		{
 			for (size_t index = 0; index < palette.size(); ++index)
 				entries_.push_back({Premultiply(palette[index]), static_cast<uint32_t>(index)});
-			std::sort(entries_.begin(), entries_.end(), [](const Entry &a, const Entry &b) { return a.p[1] < b.p[1]; });
+			std::sort(entries_.begin(), entries_.end(), [](const Entry &a, const Entry &b) { return a.p[1] < b.p[1] || (a.p[1] == b.p[1] && a.index < b.index); });
 		}
 
 		uint32_t Nearest(const Premultiplied &p) const

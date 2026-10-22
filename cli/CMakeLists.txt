@@ -23,7 +23,9 @@ add_executable(pep_cli
 )
 
 target_compile_features(pep_cli PRIVATE cxx_std_17)
-target_include_directories(pep_cli PRIVATE "${PEP_HEADER_DIR}" "${PEP_COMMON_DIR}")
+# SYSTEM: no warnings from the vendored upstream pep.h.
+target_include_directories(pep_cli SYSTEM PRIVATE "${PEP_HEADER_DIR}")
+target_include_directories(pep_cli PRIVATE "${PEP_COMMON_DIR}")
 target_compile_definitions(pep_cli PRIVATE
     UNICODE
     _UNICODE
@@ -37,6 +39,11 @@ if(MSVC)
     target_link_options(pep_cli PRIVATE wsetargv.obj)
     set_property(TARGET pep_cli PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+elseif(MINGW)
+    target_compile_options(pep_cli PRIVATE -Wall -Wextra)
+    # -municode: wmain entry point. -static: runs without the toolchain's DLLs.
+    # CRT_glob.o expands wildcards in arguments, like wsetargv.obj above.
+    target_link_options(pep_cli PRIVATE -municode -static -l:CRT_glob.o $<$<CONFIG:Release>:-s>)
 endif()
 
 target_link_libraries(pep_cli PRIVATE
