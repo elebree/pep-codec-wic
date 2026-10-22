@@ -15,6 +15,7 @@
 
 #define PEP_IMPLEMENTATION
 #include "pep.h"
+#include "pep_truncated.h"
 
 namespace
 {
@@ -467,6 +468,15 @@ namespace
 		std::vector<uint8_t> pixels_;
 	};
 
+	// Decodes image as if its header said width x height.
+	uint32_t *DecompressPep(pep image, const UINT width, const UINT height)
+	{
+		image.width = static_cast<uint16_t>(width);
+		image.height = static_cast<uint16_t>(height);
+		std::lock_guard<std::mutex> lock(g_pepMutex);
+		return pep_decompress(&image, pep_bgra, 0, 0);
+	}
+
 	HRESULT DecodePepBytes(const std::vector<uint8_t> &bytes, PepFrame **outFrame)
 	{
 		if (outFrame == nullptr)
@@ -485,24 +495,22 @@ namespace
 			return WINCODEC_ERR_BADIMAGE;
 		}
 
-		const UINT width = image.width;
-		const UINT height = image.height;
-		const uint64_t pixelCount = static_cast<uint64_t>(width) * height;
-		if (pixelCount == 0 || pixelCount > (std::numeric_limits<size_t>::max() / kBytesPerPixel))
-		{
-			pep_free(&image);
-			return WINCODEC_ERR_BADIMAGE;
-		}
-
-		uint32_t *decodedPixels = nullptr;
-		{
-			std::lock_guard<std::mutex> lock(g_pepMutex);
-			decodedPixels = pep_decompress(&image, pep_bgra, 0, 0);
-		}
+		UINT width = image.width;
+		UINT height = image.height;
+		uint32_t *decodedPixels = DecompressPep(image, width, height);
+		if (decodedPixels == nullptr && PepHeaderCanBeTruncated(bytes[0]))
+			decodedPixels = PepDecompressTruncated(image, DecompressPep, &width, &height);
 		pep_free(&image);
 
 		if (decodedPixels == nullptr)
 			return WINCODEC_ERR_BADIMAGE;
+
+		const uint64_t pixelCount = static_cast<uint64_t>(width) * height;
+		if (pixelCount > (std::numeric_limits<size_t>::max() / kBytesPerPixel))
+		{
+			PEP_FREE(decodedPixels);
+			return WINCODEC_ERR_BADIMAGE;
+		}
 
 		try
 		{

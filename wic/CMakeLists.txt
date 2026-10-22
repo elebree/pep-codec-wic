@@ -7,6 +7,7 @@ endif()
 project(pep_wic_codec LANGUAGES CXX)
 
 set(PEP_HEADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
+set(PEP_COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../common")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
@@ -24,7 +25,7 @@ add_library(pep_wic_codec SHARED
 )
 
 target_compile_features(pep_wic_codec PRIVATE cxx_std_17)
-target_include_directories(pep_wic_codec PRIVATE "${PEP_HEADER_DIR}")
+target_include_directories(pep_wic_codec PRIVATE "${PEP_HEADER_DIR}" "${PEP_COMMON_DIR}")
 target_compile_definitions(pep_wic_codec PRIVATE
     UNICODE
     _UNICODE
