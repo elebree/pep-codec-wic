@@ -12,15 +12,28 @@ recognize PEP images, show them as image files, and use the built-in Windows
 thumbnail, preview, details pane, and image property system for them.
 
 Use this if you have `.pep` files and want Windows to handle them more like
-PNG, JPEG, GIF, or other image formats. It does not replace an image editor and
-it does not convert files by itself; it adds Windows-level read support for the
-PEP image format.
+PNG, JPEG, GIF, or other image formats. It does not replace an image editor, and
+the codec does not convert files by itself: it adds Windows-level read support
+for the PEP image format. For converting, the installer can also add `pep`, a
+command-line tool that encodes images to PEP and decodes PEP files to PNG, BMP
+or TIFF.
 
 ## Install
 
 Download `PepWicCodecSetup-win-x64.exe` from the
 [latest GitHub release](https://github.com/elebree/pep-wic-codec/releases/latest)
 and run it.
+
+The installer offers two components:
+
+- **WIC codec** (selected by default): thumbnails, preview, and image
+  properties for `.pep` files in File Explorer and other Windows programs.
+- **Command-line tool** (not selected by default): `pep.exe`, added to `PATH`.
+  In a new terminal, run `pep encode image.png image.pep`,
+  `pep decode image.pep image.png`, or `pep info *.pep`; `pep --help` lists
+  the options.
+
+To change the selection later, run the installer again.
 
 The installer requires administrator approval because WIC codecs are registered
 machine-wide. On the final installer page, you can optionally restart File
