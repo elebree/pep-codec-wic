@@ -7,10 +7,10 @@ $ErrorActionPreference = "Stop"
 if ([string]::IsNullOrWhiteSpace($DllPath)) {
     $candidate = Join-Path $PSScriptRoot "PepWicCodec.dll"
     if (-not (Test-Path -LiteralPath $candidate)) {
-        $candidate = Join-Path $PSScriptRoot "..\build\Release\PepWicCodec.dll"
+        $candidate = Join-Path $PSScriptRoot "..\wic\build\Release\PepWicCodec.dll"
     }
     if (-not (Test-Path -LiteralPath $candidate)) {
-        $candidate = Join-Path $PSScriptRoot "..\out\build\x64-Debug\PepWicCodec.dll"
+        $candidate = Join-Path $PSScriptRoot "..\wic\out\build\x64-Debug\PepWicCodec.dll"
     }
     $DllPath = $candidate
 }

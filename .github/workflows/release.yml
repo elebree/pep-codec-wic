@@ -23,6 +23,7 @@ jobs:
 
     env:
       BUILD_DIR: ${{ github.workspace }}\wic\build
+      CLI_BUILD_DIR: ${{ github.workspace }}\cli\build
       PACKAGE_DIR: ${{ github.workspace }}\artifacts\PepWicCodec
       ZIP_PATH: ${{ github.workspace }}\artifacts\PepWicCodec-win-x64.zip
 
@@ -37,6 +38,14 @@ jobs:
       - name: Build
         shell: pwsh
         run: cmake --build "$env:BUILD_DIR" --config Release --parallel
+
+      - name: Configure command-line tool
+        shell: pwsh
+        run: cmake -S "$env:GITHUB_WORKSPACE\cli" -B "$env:CLI_BUILD_DIR" -G "Visual Studio 17 2022" -A x64
+
+      - name: Build command-line tool
+        shell: pwsh
+        run: cmake --build "$env:CLI_BUILD_DIR" --config Release --parallel
 
       - name: Install Inno Setup
         shell: pwsh
@@ -54,9 +63,10 @@ jobs:
 
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           & $iscc `
-            "$env:GITHUB_WORKSPACE\wic\installer\PepWicCodec.iss" `
+            "$env:GITHUB_WORKSPACE\installer\PepWicCodec.iss" `
             "/DAppVersion=$version" `
             "/DSourceDir=$env:BUILD_DIR\Release" `
+            "/DCliSourceDir=$env:CLI_BUILD_DIR\Release" `
             "/DOutputDir=$env:GITHUB_WORKSPACE\artifacts"
 
       - name: Package
@@ -67,8 +77,8 @@ jobs:
           New-Item -ItemType Directory -Path $env:PACKAGE_DIR -Force | Out-Null
 
           Copy-Item -LiteralPath "$env:BUILD_DIR\Release\PepWicCodec.dll" -Destination "$env:PACKAGE_DIR\PepWicCodec.dll"
-          Copy-Item -LiteralPath "$env:GITHUB_WORKSPACE\wic\tools\register.ps1" -Destination "$env:PACKAGE_DIR\register.ps1"
-          Copy-Item -LiteralPath "$env:GITHUB_WORKSPACE\wic\tools\unregister.ps1" -Destination "$env:PACKAGE_DIR\unregister.ps1"
+          Copy-Item -LiteralPath "$env:GITHUB_WORKSPACE\installer\register.ps1" -Destination "$env:PACKAGE_DIR\register.ps1"
+          Copy-Item -LiteralPath "$env:GITHUB_WORKSPACE\installer\unregister.ps1" -Destination "$env:PACKAGE_DIR\unregister.ps1"
           Copy-Item -LiteralPath "$env:GITHUB_WORKSPACE\README.md" -Destination "$env:PACKAGE_DIR\README.md"
 
           Compress-Archive -Path "$env:PACKAGE_DIR\*" -DestinationPath "$env:ZIP_PATH" -Force

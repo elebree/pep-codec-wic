@@ -2,4 +2,7 @@
 /wic/out
 /wic/build
 /wic/build-*
+/cli/build
+/cli/build-*
 /artifacts
+/samples
