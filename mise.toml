@@ -65,7 +65,7 @@ Compress-Archive -Path "$staging/*" -DestinationPath "artifacts/PepWicCodec-win-
 '''
 
 [tasks.dist]
-description = "Build the installer and the zip, as CI does"
+description = "Build the installer and the zip in artifacts/"
 depends = ["installer", "package"]
 
 [tasks.register]

@@ -18,6 +18,8 @@ for the PEP image format. For converting, the installer can also add `pep`, a
 command-line tool that encodes images to PEP and decodes PEP files to PNG, BMP
 or TIFF.
 
+![assets/screenshot.png](assets/screenshot.png)
+
 ## Install
 
 Download `PepWicCodecSetup-win-x64.exe` from the
@@ -51,3 +53,8 @@ Build, packaging, and manual registration instructions are in
 The PEP format and original encoder/decoder implementation come from
 [ENDESGA/PEP](https://github.com/ENDESGA/PEP). Credit for that work belongs to
 ENDESGA and the upstream repository's respective authors and contributors.
+
+The images shown in the screenshot are from the
+[Ninja Adventure Asset Pack](https://pixel-boy.itch.io/ninja-adventure-asset-pack)
+by [Pixel-boy](https://pixel-boy.itch.io/) and
+[AAA](https://www.instagram.com/challenger.aaa/), released under CC0.
